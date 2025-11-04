@@ -1,8 +1,8 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
-import { AuthContext } from "../../App";
+import { useAuth } from "@/layouts/Root";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 
@@ -11,8 +11,7 @@ function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.user);
-  const { logout } = useContext(AuthContext);
-  
+const { logout } = useAuth();
   // Helper function to check if current path matches navigation item
   const isActivePath = (path) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
