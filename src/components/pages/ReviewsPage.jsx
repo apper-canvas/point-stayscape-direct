@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/layouts/Root";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
@@ -12,7 +14,6 @@ import ReviewCard from "@/components/molecules/ReviewCard";
 import ReviewForm from "@/components/molecules/ReviewForm";
 import reviewService from "@/services/api/reviewService";
 import hotelService from "@/services/api/hotelService";
-
 function ReviewsPage() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +27,12 @@ function ReviewsPage() {
   const [hotels, setHotels] = useState([]);
   
   const location = useLocation();
-  const navigate = useNavigate();
+const navigate = useNavigate();
+  const { user, isAuthenticated } = useSelector((state) => state.user);
   
   // Get hotel info from navigation state (if coming from hotel details)
   const prefilledHotel = location.state?.hotel;
   const [selectedHotelId, setSelectedHotelId] = useState(prefilledHotel?.Id || "");
-
   useEffect(() => {
     loadReviews();
     loadHotels();
@@ -72,7 +73,16 @@ function ReviewsPage() {
     }
   }
 
-  const handleNewReview = () => {
+const handleNewReview = () => {
+    if (!isAuthenticated) {
+      navigate("/login", { 
+        state: { 
+          redirect: location.pathname + location.search,
+          message: "Please log in to write a review" 
+        }
+      });
+      return;
+    }
     setEditingReview(null);
     setShowForm(true);
   };
@@ -86,13 +96,13 @@ function ReviewsPage() {
     try {
       setFormLoading(true);
       
-      // Add user info (in real app, this would come from auth context)
+// Add authenticated user info
       const reviewData = {
         ...formData,
         hotelId: selectedHotelId || prefilledHotel?.Id,
-        userId: 1, // Mock current user ID
-        userName: "Current User", // Mock current user name
-        userAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+        userId: user?.Id,
+        userName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User',
+        userAvatar: user?.avatarUrl || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face`
       };
       
       if (editingReview) {
@@ -151,13 +161,24 @@ function ReviewsPage() {
               Share your experiences and help other travelers
             </p>
           </div>
-          <Button
-            onClick={handleNewReview}
-            className="mt-4 sm:mt-0"
-          >
-            <ApperIcon name="Plus" className="w-5 h-5 mr-2" />
-            Write Review
-          </Button>
+{isAuthenticated ? (
+            <Button
+              onClick={handleNewReview}
+              className="mt-4 sm:mt-0"
+            >
+              <ApperIcon name="Plus" className="w-5 h-5 mr-2" />
+              Write Review
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate("/login", { state: { redirect: location.pathname + location.search } })}
+              variant="secondary"
+              className="mt-4 sm:mt-0"
+            >
+              <ApperIcon name="LogIn" className="w-5 h-5 mr-2" />
+              Login to Write Review
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -263,11 +284,21 @@ function ReviewsPage() {
           <Empty
             title="No reviews found"
             description="Be the first to write a review!"
-            action={
-              <Button onClick={handleNewReview}>
-                <ApperIcon name="Plus" className="w-5 h-5 mr-2" />
-                Write First Review
-              </Button>
+action={
+              isAuthenticated ? (
+                <Button onClick={handleNewReview}>
+                  <ApperIcon name="Plus" className="w-5 h-5 mr-2" />
+                  Write First Review
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate("/login", { state: { redirect: location.pathname + location.search } })}
+                  variant="secondary"
+                >
+                  <ApperIcon name="LogIn" className="w-5 h-5 mr-2" />
+                  Login to Write First Review
+                </Button>
+              )
             }
           />
         ) : (
@@ -281,8 +312,8 @@ function ReviewsPage() {
                 review={review}
                 onEdit={handleEditReview}
                 onDelete={handleDeleteReview}
-                showHotelName={!selectedHotelId}
-                currentUserId={1} // Mock current user ID
+showHotelName={!selectedHotelId}
+                currentUserId={user?.Id}
               />
             ))}
           </motion.div>
