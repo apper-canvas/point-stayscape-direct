@@ -186,14 +186,39 @@ const reviewService = {
     return this.getAll({ userId });
   },
 
-  async create(reviewData) {
+async create(reviewData) {
     this.ensureClient();
     
-    // Validate required fields
-    if (!reviewData.hotelId || !reviewData.userId || !reviewData.rating || !reviewData.title) {
-      throw new Error("Missing required fields");
+    // Validate required fields with specific error messages
+    const missingFields = [];
+    
+    if (!reviewData.hotelId) {
+      missingFields.push("Hotel ID");
     }
-
+    
+    if (!reviewData.userId) {
+      missingFields.push("User ID");
+    }
+    
+    if (!reviewData.rating || reviewData.rating === 0) {
+      missingFields.push("Rating");
+    }
+    
+    if (!reviewData.title || !reviewData.title.trim()) {
+      missingFields.push("Review Title");
+    }
+    
+    if (!reviewData.comment || !reviewData.comment.trim()) {
+      missingFields.push("Review Comment");
+    }
+    
+    if (!reviewData.stayDate) {
+      missingFields.push("Stay Date");
+    }
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+    }
     // Map UI fields to database fields - only include updateable fields
     const createData = {
       Name: `Review - ${reviewData.title}`,
